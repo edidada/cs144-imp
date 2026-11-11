@@ -1,0 +1,35 @@
+name: CS144 Checkpoint 3
+on:
+  push:
+    branches: [edidada/check3]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check3:
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    timeout-minutes: 25
+    steps:
+      - name: Install Fall 2026 toolchain
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y git ca-certificates g++ cmake ninja-build
+      - uses: actions/checkout@v4
+      - name: Build official functionality and speed tests
+        run: |
+          cmake -S . -B build -G Ninja
+          cmake --build build --parallel 2 --target functionality_testing speed_testing check0_extra
+      - name: Run official checkpoint and regression tests
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p reports/check3-results
+          cmake --build build --target check3 2>&1 | tee reports/check3-results/check3.log
+          ctest --test-dir build -R '^send_|^wrapping_|^recv_|^reassembler_|^byte_stream_|^no_skip$|^check0_extra$' --output-on-failure --timeout 60 --output-junit "$PWD/reports/check3-results/junit.xml" 2>&1 | tee reports/check3-results/ctest.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cs144-check3-results
+          path: reports/check3-results/
+          if-no-files-found: warn
