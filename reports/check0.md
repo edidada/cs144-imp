@@ -15,10 +15,16 @@ HTTP/1.1 GET，请求完整写入后循环读到 EOF，将完整 HTTP 响应原�
 
 ## 验证与范围
 
-远端运行脚本 scripts/verify_check0.py 保留原 cmake check0（含公开 HTTP 哈希服务），
+远端运行脚本统一放在 edidada/ai_agent_scripts 的 py/verify_cs144_check0.py，
+通过 --repo 指定实验 checkout；工作流检出脚本库的固定 SHA，无需在实验仓库保存 Python 副本。
+脚本保留原 cmake check0（含公开 HTTP 哈希服务），
 再记录 ASan/UBSan 原测试、速度基准、独立四容量各一万步队列 oracle，
 以及本地回环服务的请求校验、分段响应及 2MiB 二进制响应。
-预期 CTest 包括编译 fixtures 共 12 项；尚待首次远端运行，不提前登记通过。
+首次实现提交 8b54a4ac35bf28780b4397a3eb4b8fe1e1484745 对应
+https://github.com/edidada/cs144-imp/actions/runs/43016181334 completed/success。
+原 check0、CTest 共 12 项（包括两个编译 fixtures）、四容量共 40000 步 oracle、
+两组 HTTP 字节对照均通过。工具链为 Ubuntu 26.04 / g++ 15.2.0。
+脚本迁移后仍需对迁移后的最终 HEAD 复验，再更新总台账。
 
 原测试、参考及编译告警未减弱。公共检查不等于 Stanford 私有 grader；
 手工邮件练习未执行，也未向任何第三方发送邮件。后续 Checkpoint 1–7 未完成。
