@@ -34,7 +34,14 @@ Address::Address( const sockaddr* addr, const size_t size ) : size_( size )
     throw runtime_error( "invalid sockaddr size" );
   }
 
-  memcpy( &address_.storage, addr, size );
+  // recvmsg may report no source address (nullptr, 0), e.g. on socket pairs.
+  // Even a zero-length memcpy requires non-null arguments under UBSan.
+  if ( size != 0 ) {
+    if ( addr == nullptr ) {
+      throw runtime_error( "null sockaddr with nonzero size" );
+    }
+    memcpy( &address_.storage, addr, size );
+  }
 }
 
 //! Error category for getaddrinfo and getnameinfo failures.
