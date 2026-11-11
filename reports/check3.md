@@ -22,7 +22,11 @@ push 尽量填满窗口，payload 不超过 MAX_PAYLOAD_SIZE；SYN/FIN 各占一
 ASan/UBSan、官方速度和已有 oracle；最终结果需匹配最终提交 SHA。
 未修改官方测试，也没有用模拟通过替代它们。
 
-Checkpoint3 还要求 hands-on：同一 VM 与 Linux TCP 交互、同学连接、跨互联网
-交流，以及让 webget 使用自写 TCP。当前实现提交尚未完成这些活动，后续需要
-TUN 设备、网络配置和真实交互证据；公共单元测试通过不等于整个实验验收。
+webget 已改用 CS144TCPSocket 并等待干净关闭。工作流在一次性特权容器中建立
+TUN，让自写 TCP 从 Linux TCP HTTP 服务获取 256 KiB 随机二进制数据并逐字节比对，
+再用官方丢包适配器配置双向各 5% 丢包重做传输。另通过课程限定源网段的 NAT
+运行原始公网 HTTP 哈希测试。结果和连接关闭日志归档，未运行前不算验收。
+
+Checkpoint3 的同学双向互动仍需真实同学或另一端参与，当前没有这部分证据。
+远端 Linux 与公网服务检查通过也不等于完成全部 hands-on 要求。
 Checkpoint4–7 尚未完成。由 Codex 按用户自学任务编写，未虚构课堂身份或成绩。

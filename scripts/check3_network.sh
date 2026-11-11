@@ -30,6 +30,15 @@ cmp "$output_dir/server/payload.bin" "$output_dir/student-body.bin"
 sha256sum "$output_dir/server/payload.bin" "$output_dir/student-body.bin" > "$output_dir/hashes.txt"
 printf 'PASS: student TCP fetched 262144 exact binary bytes from Linux TCP\n' > "$output_dir/result.txt"
 
+# The official lossy adapter drops real packets in both directions.
+printf 'GET /payload.bin HTTP/1.0\r\nHost: 169.254.144.1\r\n\r\n' \
+  | timeout 90 "$build_dir/apps/tcp_ipv4" -t 100 -Lu 0.05 -Ld 0.05 169.254.144.1 80 \
+    > "$output_dir/lossy-response.bin" 2> "$output_dir/lossy-tcp.log"
+grep -a -q '^HTTP/1.0 200' "$output_dir/lossy-response.bin"
+tail -c 262144 "$output_dir/lossy-response.bin" > "$output_dir/lossy-body.bin"
+cmp "$output_dir/server/payload.bin" "$output_dir/lossy-body.bin"
+printf 'PASS: 262144 exact bytes with 5%% configured loss in each direction\n' >> "$output_dir/result.txt"
+
 # Apply the course's source-scoped NAT for the real public HTTP test.
 iptables -t nat -A POSTROUTING -s 169.254.144.0/24 -j MASQUERADE
 echo 1 > /proc/sys/net/ipv4/ip_forward
