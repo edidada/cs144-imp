@@ -36,6 +36,18 @@ server_pid=
 cmp "$output_dir/ucla-source.bin" "$output_dir/stanford-received.bin"
 cmp "$output_dir/stanford-source.bin" "$output_dir/ucla-received.bin"
 sha256sum "$output_dir/"*.bin > "$output_dir/hashes.txt"
+# Creative application: request/response postcard service over the same router.
+timeout 90 "$build_dir/apps/tcp_eth_udp$suffix" postcard-server 2050 50.0.0.1 50.9.8.7:80 \
+  > "$output_dir/postcard-server.out" 2> "$output_dir/postcard-server.log" &
+server_pid=$!
+sleep 1
+timeout 90 "$build_dir/apps/tcp_eth_udp$suffix" postcard-client 2080 127.0.0.1:9080 \
+  80.0.0.1 80.6.5.4 50.9.8.7:80 'Hello from UCLA: networking connects us!' \
+  > "$output_dir/postcard.txt" 2> "$output_dir/postcard-client.log"
+wait "$server_pid"
+server_pid=
+printf '+--- Virtual Internet postcard ---+\nHello from UCLA: networking connects us!\n+--- delivered through student TCP/IP/ARP/router ---+\n' > "$output_dir/postcard-expected.txt"
+cmp "$output_dir/postcard-expected.txt" "$output_dir/postcard.txt"
 kill -INT "$capture_pid"
 wait "$capture_pid" || true
 capture_pid=
@@ -46,4 +58,4 @@ grep -qx 2 "$output_dir/arp-opcodes.txt"
 tshark -r "$output_dir/ethernet-over-udp.pcap" -d udp.port==2080,eth \
   -Y 'tcp.flags.syn==1' -T fields -e tcp.flags > "$output_dir/tcp-handshake.txt"
 test -s "$output_dir/tcp-handshake.txt"
-printf 'PASS: two distinct 1-MiB binary files exchanged exactly through student router/TCP/ARP\nPASS: captured ARP request/reply and TCP SYN\n' > "$output_dir/result.txt"
+printf 'PASS: two distinct 1-MiB binary files exchanged exactly through student router/TCP/ARP\nPASS: captured ARP request/reply and TCP SYN\nPASS: creative postcard request/response matched exact expected text\n' > "$output_dir/result.txt"

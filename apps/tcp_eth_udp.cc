@@ -281,6 +281,45 @@ void print_usage( const string_view argv0 )
           "local addr> <virtual peer addr:port>\n"
        << "   or ARGS = server <physical src port> <virtual default router> <virtual local addr:port>\n\n";
 }
+
+// A tiny postcard service over the complete student-built stack. One connection
+// carries one bounded message; TCP EOF frames the request and response.
+void postcard( const bool server, const span<char*> args )
+{
+  const string local = server ? args[4] : args[5];
+  const Address local_addr = server ? parse_ip_port( local ) : Address { local };
+  TCP_over_IP_over_Ethernet_over_UDP_Socket sock {
+    Address { "0", args[2] }, local_addr, Address { server ? args[3] : args[4] } };
+  if ( server ) {
+    sock.bind( local_addr );
+    sock.listen_and_accept();
+    string message;
+    while ( not sock.eof() ) {
+      string chunk;
+      sock.read( chunk );
+      if ( chunk.size() > 65536 - message.size() ) {
+        throw runtime_error( "postcard exceeds 64 KiB" );
+      }
+      message += chunk;
+    }
+    sock.write_all( "+--- Virtual Internet postcard ---+\n" + message + "\n+--- delivered through student TCP/IP/ARP/router ---+\n" );
+    sock.shutdown( SHUT_WR );
+  } else {
+    sock.connect( parse_ip_port( args[3] ), parse_ip_port( args[6] ) );
+    const string message { args[7] };
+    if ( message.size() > 65536 ) {
+      throw runtime_error( "postcard exceeds 64 KiB" );
+    }
+    sock.write_all( message );
+    sock.shutdown( SHUT_WR );
+    while ( not sock.eof() ) {
+      string response;
+      sock.read( response );
+      cout << response;
+    }
+  }
+  sock.wait_until_closed();
+}
 } // namespace
 
 int main( int argc, char* argv[] )
@@ -292,7 +331,11 @@ int main( int argc, char* argv[] )
 
     auto args = span( argv, argc );
 
-    if ( args.size() == 7 and args[1] == "client"sv ) {
+    if ( args.size() == 8 and args[1] == "postcard-client"sv ) {
+      postcard( false, args );
+    } else if ( args.size() == 5 and args[1] == "postcard-server"sv ) {
+      postcard( true, args );
+    } else if ( args.size() == 7 and args[1] == "client"sv ) {
       be_client( args[2], args[3], args[4], args[5], args[6] );
     } else if ( args.size() == 5 and args[1] == "server"sv ) {
       be_server( args[2], args[3], args[4] );
