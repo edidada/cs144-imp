@@ -16,15 +16,14 @@ jobs:
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y git ca-certificates g++ cmake ninja-build python3
       - uses: actions/checkout@v4
-      - name: Checkout shared Python scripts
-        uses: actions/checkout@v4
-        with:
-          repository: edidada/ai_agent_scripts
-          ref: ac7dce5af5f066b3f6ab928622a52edc2dd75cbd
-          path: .agent-scripts
-          sparse-checkout: py
-      - name: Verify official and supplemental checks
-        run: python3 .agent-scripts/py/verify_cs144_check0.py --repo .
+      - name: Verify public checkpoint and oracle checks
+        run: |
+          mkdir -p reports/check0-results
+          g++ --version > reports/check0-results/toolchain.log
+          cmake -S . -B build -G Ninja
+          cmake --build build --parallel 2 --target functionality_testing webget speed_testing check0_extra
+          cmake --build build --target check0
+          ctest --test-dir build -R '^byte_stream_|^no_skip$|^t_webget$|^check0_extra$' --output-on-failure --timeout 30 --output-junit "$PWD/reports/check0-results/junit.xml"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

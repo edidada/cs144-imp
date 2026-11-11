@@ -16,7 +16,9 @@ HTTP/1.1 GET，请求完整写入后循环读到 EOF，将完整 HTTP 响应原�
 ## 验证与范围
 
 远端运行脚本统一放在 edidada/ai_agent_scripts 的 py/verify_cs144_check0.py，
-通过 --repo 指定实验 checkout；工作流检出脚本库的固定 SHA，无需在实验仓库保存 Python 副本。
+通过 --repo 指定实验 checkout。脚本库为私有仓库，完整 Python 校验在脚本库自己的
+verify_cs144_check0.yml 工作流运行，输入实验完整 SHA；实验仓库的独立 YAML 直接调用
+原 CMake/CTest 命令，不新增 PAT、不改变可见性，也不保存 Python 副本。
 脚本保留原 cmake check0（含公开 HTTP 哈希服务），
 再记录 ASan/UBSan 原测试、速度基准、独立四容量各一万步队列 oracle，
 以及本地回环服务的请求校验、分段响应及 2MiB 二进制响应。
@@ -24,7 +26,8 @@ HTTP/1.1 GET，请求完整写入后循环读到 EOF，将完整 HTTP 响应原�
 https://github.com/edidada/cs144-imp/actions/runs/43016181334 completed/success。
 原 check0、CTest 共 12 项（包括两个编译 fixtures）、四容量共 40000 步 oracle、
 两组 HTTP 字节对照均通过。工具链为 Ubuntu 26.04 / g++ 15.2.0。
-脚本迁移后仍需对迁移后的最终 HEAD 复验，再更新总台账。
+迁移中间提交 d9446e0 的 run 43017208554 由于跨私有仓库检出被拒绝而失败，
+未执行实验；按上述两个工作流分工修正后，必须对最终 HEAD 复验再更新总台账。
 
 原测试、参考及编译告警未减弱。公共检查不等于 Stanford 私有 grader；
 手工邮件练习未执行，也未向任何第三方发送邮件。后续 Checkpoint 1–7 未完成。
