@@ -29,7 +29,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p reports/check5-results
-          cmake --build build --target check5 2>&1 | tee reports/check5-results/check3.log
+          cmake --build build --target check5 2>&1 | tee reports/check5-results/check5.log
           ctest --test-dir build -R '^net_interface|^send_|^wrapping_|^recv_|^reassembler_|^byte_stream_|^no_skip$|^check0_extra$' --output-on-failure --timeout 60 --output-junit "$PWD/reports/check5-results/junit.xml" 2>&1 | tee reports/check5-results/ctest.log
       - name: Verify own TCP stack against Linux and Internet HTTP
         run: bash scripts/check3_network.sh build reports/check5-results/network
