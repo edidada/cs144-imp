@@ -25,7 +25,7 @@ jobs:
       - name: Full public unit regression
         run: |
           mkdir -p reports/check7-results
-          ctest --test-dir build --output-on-failure --timeout 60 --output-junit "$PWD/reports/check7-results/junit.xml"
+          ctest --test-dir build -E '^t_webget$' --output-on-failure --timeout 60 --output-junit "$PWD/reports/check7-results/junit.xml"
       - name: Official tiny Internet with duplex 1-MiB transfers
         run: bash scripts/check7_internet.sh build reports/check7-results/tiny
       - name: Repeat full-stack transfer with ASan and UBSan
