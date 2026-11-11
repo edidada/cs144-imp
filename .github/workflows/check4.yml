@@ -1,0 +1,23 @@
+name: CS144 Checkpoint 4 measurements
+on:
+  push:
+    branches: [edidada/check4]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install measurement tools
+        run: sudo apt-get update && sudo apt-get install -y iputils-ping traceroute
+      - name: Collect at least one hour on a real distant path
+        run: bash scripts/check4_measure.sh reports/check4-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cs144-check4-measurements
+          path: reports/check4-results/
+          if-no-files-found: error
