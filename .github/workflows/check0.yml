@@ -1,0 +1,26 @@
+name: CS144 Checkpoint 0
+on:
+  push:
+    branches: [edidada/check0]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check0:
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    timeout-minutes: 20
+    steps:
+      - name: Install Fall 2026 toolchain
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y git ca-certificates g++ cmake ninja-build python3
+      - uses: actions/checkout@v4
+      - name: Verify official and supplemental checks
+        run: python3 scripts/verify_check0.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cs144-check0-results
+          path: reports/check0-results/
+          if-no-files-found: error
