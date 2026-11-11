@@ -1,0 +1,41 @@
+name: CS144 Checkpoint 6
+on:
+  push:
+    branches: [edidada/check6]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check3:
+    runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:26.04
+      options: --privileged
+    # TUN and routing changes are confined to this disposable job container.
+    # GitHub's runner image supplies the host kernel's TUN module.
+    timeout-minutes: 25
+    steps:
+      - name: Install Fall 2026 toolchain
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y git ca-certificates g++ cmake ninja-build python3 curl iproute2 iptables
+      - uses: actions/checkout@v4
+      - name: Build official functionality and speed tests
+        run: |
+          cmake -S . -B build -G Ninja
+          cmake --build build --parallel 2 --target functionality_testing speed_testing check0_extra webget tcp_ipv4
+      - name: Run official checkpoint and regression tests
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p reports/check6-results
+          cmake --build build --target check6 2>&1 | tee reports/check6-results/check6.log
+          ctest --test-dir build -R '^router$|^net_interface|^send_|^wrapping_|^recv_|^reassembler_|^byte_stream_|^no_skip$|^check0_extra$' --output-on-failure --timeout 60 --output-junit "$PWD/reports/check6-results/junit.xml" 2>&1 | tee reports/check6-results/ctest.log
+      - name: Verify own TCP stack against Linux and Internet HTTP
+        run: bash scripts/check3_network.sh build reports/check6-results/network
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cs144-check6-results
+          path: reports/check6-results/
+          if-no-files-found: warn
