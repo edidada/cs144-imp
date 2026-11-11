@@ -1,0 +1,37 @@
+name: CS144 Checkpoint 7
+on:
+  push:
+    branches: [edidada/check7]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tiny-internet:
+    runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:26.04
+      options: --privileged
+    timeout-minutes: 25
+    steps:
+      - name: Install toolchain and capture tools
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y git ca-certificates g++ cmake ninja-build tcpdump tshark
+      - uses: actions/checkout@v4
+      - name: Build original and sanitized applications and tests
+        run: |
+          cmake -S . -B build -G Ninja -DSANITIZED_APPS=True
+          cmake --build build --parallel 2 --target fun_router tcp_eth_udp fun_router_sanitized tcp_eth_udp_sanitized functionality_testing speed_testing check0_extra
+      - name: Full public unit regression
+        run: |
+          mkdir -p reports/check7-results
+          ctest --test-dir build --output-on-failure --timeout 60 --output-junit "$PWD/reports/check7-results/junit.xml"
+      - name: Official tiny Internet with duplex 1-MiB transfers
+        run: bash scripts/check7_internet.sh build reports/check7-results/tiny
+      - name: Repeat full-stack transfer with ASan and UBSan
+        run: bash scripts/check7_internet.sh build reports/check7-results/sanitized _sanitized
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cs144-check7-results
+          path: reports/check7-results/
